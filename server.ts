@@ -1,7 +1,6 @@
 import http from "http";
 import next from "next";
 import { Server as IOServer } from "socket.io";
-
 import { attachSocketHandlers } from "./app/api/socket/route";
 
 const port = Number(process.env.PORT ?? 3000);
@@ -21,15 +20,26 @@ nextApp
     const io = new IOServer(httpServer, {
       transports: ["websocket"],
       cors: {
-        origin: "*",
+        origin: (origin, callback) => {
+          if (!origin) return callback(null, true);
+          callback(null, true);
+        },
         methods: ["GET", "POST"],
+        credentials: true,
       },
+    });
+
+    io.on("connection", (socket) => {
+      console.log(`User connected: ${socket.id}`);
+      socket.on("disconnect", (reason) => {
+        console.log(`User disconnected: ${socket.id} (${reason})`);
+      });
     });
 
     attachSocketHandlers(io);
 
     httpServer.listen(port, hostname, () => {
-      console.log(`TicTacToe server listening on http://${hostname}:${port}`);
+      console.log(`Server running at http://${hostname}:${port}`);
     });
   })
   .catch((err) => {

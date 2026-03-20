@@ -1,18 +1,15 @@
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 
-// Creates a socket.io client connection for room multiplayer.
-export function createRoomSocket() {
+let socket: Socket | null = null;
+
+export function createRoomSocket(): Socket {
+  if (socket) return socket;
   const socketUrl =
-    process.env.NEXT_PUBLIC_SOCKET_URL ||
-    (typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1")
-      ? "http://localhost:3001"
-      : typeof window !== "undefined"
-        ? window.location.origin
-        : "http://localhost:3001");
-
-  return io(socketUrl, {
+    process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
+  socket = io(socketUrl, {
+    path: "/api/socket",
     transports: ["websocket"],
+    withCredentials: true,
   });
+  return socket;
 }
