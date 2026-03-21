@@ -29,8 +29,7 @@ function isAllowedVercelHost(origin: string): boolean {
 
 /**
  * CORS for Socket.IO (Engine.IO polling + WebSocket).
- * With `credentials: true`, the browser requires a concrete
- * `Access-Control-Allow-Origin` value (not `*`), so we echo the request origin when allowed.
+ * `credentials: false` — client does not send cookies; origins are still explicit for clarity.
  */
 export function getSocketIoCorsOptions(): CorsOptions {
   const allowed = new Set<string>([...DEFAULT_ORIGINS, ...parseExtraOrigins()]);
@@ -51,7 +50,7 @@ export function getSocketIoCorsOptions(): CorsOptions {
       }
       callback(new Error("Not allowed by CORS"), false);
     },
-    credentials: true,
+    credentials: false,
     methods: ["GET", "POST", "OPTIONS"],
   };
 }
