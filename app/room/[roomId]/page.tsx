@@ -150,7 +150,8 @@ export default function RoomPage() {
     if (!players.X || !players.O) return "Waiting for opponent...";
     if (game.status === "won") return `${game.winner} wins!`;
     if (game.status === "draw") return "Draw!";
-    return `Your move: ${game.turn}`;
+    if (game.turn === myPlayer) return "Your move";
+    return "Opponent's turn";
   }, [
     connected,
     myPlayer,

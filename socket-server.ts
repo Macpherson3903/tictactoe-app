@@ -1,32 +1,26 @@
-// app/api/socket/route.ts
-import { Server } from "socket.io";
-import { NextApiRequest, NextApiResponse } from "next";
+import http from "http";
 
-export const config = {
-  api: {
-    bodyParser: false,
+import { Server as IOServer } from "socket.io";
+
+import { attachSocketHandlers } from "./lib/online/socketHandlers";
+
+const port = Number(process.env.SOCKET_PORT ?? 3001);
+const hostname = process.env.HOSTNAME ?? "0.0.0.0";
+
+const httpServer = http.createServer();
+
+const io = new IOServer(httpServer, {
+  transports: ["websocket"],
+  path: "/api/socket",
+  cors: {
+    origin: true,
+    credentials: true,
+    methods: ["GET", "POST"],
   },
-};
+});
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (!res.socket.server.io) {
-    const io = new Server(res.socket.server, {
-      path: "/api/socket",
-      cors: {
-        origin: req.headers.origin || "*",
-        methods: ["GET", "POST"],
-        credentials: true,
-      },
-    });
+attachSocketHandlers(io);
 
-    io.on("connection", (socket) => {
-      console.log(`User connected: ${socket.id}`);
-      socket.on("disconnect", () => {
-        console.log(`User disconnected: ${socket.id}`);
-      });
-    });
-
-    res.socket.server.io = io;
-  }
-  res.end();
-}
+httpServer.listen(port, hostname, () => {
+  console.log(`Socket server listening at http://${hostname}:${port} (path /api/socket)`);
+});

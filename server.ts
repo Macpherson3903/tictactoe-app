@@ -18,6 +18,7 @@ nextApp
     });
 
     const io = new IOServer(httpServer, {
+      path: "/api/socket",
       transports: ["websocket"],
       cors: {
         origin: (origin, callback) => {
@@ -27,13 +28,6 @@ nextApp
         methods: ["GET", "POST"],
         credentials: true,
       },
-    });
-
-    io.on("connection", (socket) => {
-      console.log(`User connected: ${socket.id}`);
-      socket.on("disconnect", (reason) => {
-        console.log(`User disconnected: ${socket.id} (${reason})`);
-      });
     });
 
     attachSocketHandlers(io);

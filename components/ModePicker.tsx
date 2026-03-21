@@ -5,7 +5,12 @@ import TicTacToeBoard from "./TicTacToeBoard";
 import RoomControls from "./RoomControls";
 import type { GameState, MoveIndex, Player } from "@/lib/game/types";
 import { gameReducer, makeInitialState } from "@/lib/game/reducer";
-import { pickEasyAiMove } from "@/lib/game/ai";
+import {
+  difficultyFromIndex,
+  difficultyToIndex,
+  pickAiMove,
+  type AiDifficulty,
+} from "@/lib/game/ai";
 
 type Mode = "local" | "ai" | "online";
 
@@ -100,6 +105,8 @@ function modeReducer(state: ModeState, action: ModeAction): ModeState {
 
 export default function ModePicker() {
   const [mode, setMode] = useState<Mode | null>(null);
+  const [baseDifficulty, setBaseDifficulty] = useState<AiDifficulty>("easy");
+  const [progressiveDifficulty, setProgressiveDifficulty] = useState(true);
 
   const [state, dispatch] = useReducer(modeReducer, undefined, () => ({
     game: makeInitialState("X"),
@@ -162,20 +169,25 @@ export default function ModePicker() {
   const aiPlayer: Player = "O";
   const humanPlayer: Player = "X";
 
-  // Easy AI: win if possible, otherwise block immediate threats, otherwise random.
+  const effectiveAiDifficulty = useMemo((): AiDifficulty => {
+    if (!progressiveDifficulty) return baseDifficulty;
+    const bumped = difficultyToIndex(baseDifficulty) + state.score.X;
+    return difficultyFromIndex(bumped);
+  }, [baseDifficulty, progressiveDifficulty, state.score.X]);
+
   useEffect(() => {
     if (mode !== "ai") return;
     if (isTerminal) return;
     if (state.game.turn !== aiPlayer) return;
 
     const t = window.setTimeout(() => {
-      const pick = pickEasyAiMove(state.game, aiPlayer);
+      const pick = pickAiMove(state.game, aiPlayer, effectiveAiDifficulty);
       if (pick === null) return;
       dispatch({ type: "MOVE", index: pick });
     }, AI_DELAY_MS);
 
     return () => window.clearTimeout(t);
-  }, [dispatch, state.game, isTerminal, mode]);
+  }, [dispatch, state.game, isTerminal, mode, effectiveAiDifficulty]);
 
   const resetGame = (startingPlayer: Player = "X") => {
     dispatch({ type: "RESET_GAME", startingPlayer });
@@ -234,10 +246,10 @@ export default function ModePicker() {
               className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/60 p-5 text-left hover:bg-white/80 dark:hover:bg-zinc-950/40 transition-colors"
             >
               <div className="font-semibold text-zinc-900 dark:text-zinc-50">
-                Vs AI (easy)
+                Vs AI
               </div>
               <div className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
-                You play as X.
+                Easy, medium, or hard — optional ramp-up as you win.
               </div>
             </button>
 
@@ -252,7 +264,7 @@ export default function ModePicker() {
                 Online Multiplayer
               </div>
               <div className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
-                Coming soon.
+                Create or join a room and play in real time.
               </div>
             </button>
           </div>
@@ -281,7 +293,7 @@ export default function ModePicker() {
                     {mode === "local"
                       ? "Local 2-player"
                       : mode === "ai"
-                        ? "Vs AI (easy)"
+                        ? "Vs AI"
                         : "Online"}
                   </div>
                 </div>
@@ -296,7 +308,7 @@ export default function ModePicker() {
               </div>
 
               <div className="mt-4 flex items-start justify-between gap-4">
-                <div>
+                <div className="flex-1 min-w-0">
                   <ResultLine
                     status={state.game.status}
                     winner={state.game.winner}
@@ -307,6 +319,65 @@ export default function ModePicker() {
                       ? "Click only when it's your turn."
                       : "Tap a square to move."}
                   </p>
+                  {mode === "ai" && (
+                    <div className="mt-4 space-y-3">
+                      <div>
+                        <div className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                          Difficulty
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {(
+                            [
+                              ["easy", "Easy"],
+                              ["medium", "Medium"],
+                              ["hard", "Hard"],
+                            ] as const
+                          ).map(([id, label]) => (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => setBaseDifficulty(id)}
+                              className={[
+                                "rounded-lg px-3 py-1.5 text-sm font-medium border transition-colors",
+                                baseDifficulty === id
+                                  ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                                  : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/40 hover:bg-zinc-50 dark:hover:bg-zinc-950",
+                              ].join(" ")}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-zinc-700 dark:text-zinc-300">
+                        <input
+                          type="checkbox"
+                          checked={progressiveDifficulty}
+                          onChange={(e) =>
+                            setProgressiveDifficulty(e.target.checked)
+                          }
+                          className="rounded border-zinc-300 dark:border-zinc-600"
+                        />
+                        <span>
+                          Ramp up after each win (caps at hard; uses match
+                          score)
+                        </span>
+                      </label>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                        Active:{" "}
+                        <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                          {effectiveAiDifficulty}
+                        </span>
+                        {progressiveDifficulty &&
+                          baseDifficulty !== effectiveAiDifficulty && (
+                            <span>
+                              {" "}
+                              (started {baseDifficulty}, raised by wins)
+                            </span>
+                          )}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -371,12 +442,12 @@ export default function ModePicker() {
                     <span className="font-semibold text-zinc-900 dark:text-zinc-50">
                       X
                     </span>
-                    . The AI plays
+                    . The AI plays{" "}
                     <span className="font-semibold text-zinc-900 dark:text-zinc-50">
-                      {" "}
                       O
-                    </span>
-                    .
+                    </span>{" "}
+                    at <span className="font-semibold">{effectiveAiDifficulty}</span>{" "}
+                    {progressiveDifficulty && "(with ramp-up)"}.
                   </>
                 ) : (
                   <>Two humans alternate turns.</>
