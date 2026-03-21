@@ -13,7 +13,7 @@ export function createRoomSocket(): Socket {
   if (socket) return socket;
   socket = io(getSocketUrl(), {
     path: "/api/socket",
-    transports: ["websocket"],
+    transports: ["polling", "websocket"],
     withCredentials: true,
     autoConnect: false,
   });

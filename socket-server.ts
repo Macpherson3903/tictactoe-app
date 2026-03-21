@@ -10,7 +10,7 @@ const hostname = process.env.HOSTNAME ?? "0.0.0.0";
 const httpServer = http.createServer();
 
 const io = new IOServer(httpServer, {
-  transports: ["websocket"],
+  transports: ["polling", "websocket"],
   path: "/api/socket",
   cors: {
     origin: true,

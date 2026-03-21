@@ -19,7 +19,7 @@ nextApp
 
     const io = new IOServer(httpServer, {
       path: "/api/socket",
-      transports: ["websocket"],
+      transports: ["polling", "websocket"],
       cors: {
         origin: (origin, callback) => {
           if (!origin) return callback(null, true);
