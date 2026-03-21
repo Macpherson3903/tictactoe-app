@@ -2,6 +2,7 @@ import http from "http";
 import next from "next";
 import { Server as IOServer } from "socket.io";
 import { attachSocketHandlers } from "./lib/online/socketHandlers";
+import { getSocketIoCorsOptions } from "./lib/online/socketCors";
 
 const port = Number(process.env.PORT ?? 3000);
 const hostname = process.env.HOSTNAME ?? "0.0.0.0";
@@ -20,14 +21,7 @@ nextApp
     const io = new IOServer(httpServer, {
       path: "/api/socket",
       transports: ["polling", "websocket"],
-      cors: {
-        origin: (origin, callback) => {
-          if (!origin) return callback(null, true);
-          callback(null, true);
-        },
-        methods: ["GET", "POST"],
-        credentials: true,
-      },
+      cors: getSocketIoCorsOptions(),
     });
 
     attachSocketHandlers(io);
