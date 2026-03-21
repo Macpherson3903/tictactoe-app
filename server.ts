@@ -1,7 +1,7 @@
 import http from "http";
 import next from "next";
 import { Server as IOServer } from "socket.io";
-import { attachSocketHandlers } from "./app/api/socket/route";
+import { attachSocketHandlers } from "./lib/online/socketHandlers";
 
 const port = Number(process.env.PORT ?? 3000);
 const hostname = process.env.HOSTNAME ?? "0.0.0.0";
